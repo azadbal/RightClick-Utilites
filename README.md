@@ -2,6 +2,8 @@
 
 A standalone Windows 11 app that adds a **RightClick Utilities** submenu to Explorer for files and folders. Build your own shortcuts by pairing a menu label with a program and its arguments.
 
+![RightClick Utilities in the Windows 11 context menu, showing video compression, audio removal, and function management](docs/images/rightclick-utilities-menu.png)
+
 ## Included functions
 
 - **Compress video below 15 MB**
