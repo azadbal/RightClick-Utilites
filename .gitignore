@@ -1,0 +1,12 @@
+node_modules/
+dist/
+release/
+cli/target/
+src-tauri/target/
+src-tauri/gen/
+shell/build/
+package/build/
+tests/output/
+*.pfx
+*.cer
+*.msix

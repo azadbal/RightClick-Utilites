@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "RightClick Utilities",
+  "version": "0.1.0",
+  "identifier": "com.azad.rightclickutilities",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{"title": "RightClick Utilities", "width": 1040, "height": 760, "minWidth": 840, "minHeight": 660}],
+    "security": {"csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data:"}
+  },
+  "bundle": {"active": false}
+}
