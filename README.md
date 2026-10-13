@@ -16,6 +16,8 @@ Video content is checked with ffprobe. Audio-only files, images, and fake videos
 
 ## Use the app
 
+![RightClick Utilities desktop app with function management and a completed audio-removal operation](docs/images/rightclick-utilities-app.png)
+
 Open `release/Utilities.exe`. Choose a function, select or drop one file or folder, and click **Run function**. The app shows progress, cancellation, errors, and an **Open output** button.
 
 Use **Add function** or **Edit** to change the label, program, arguments, extension filters, and file/folder applicability. Enable or disable functions with the checkbox, and reorder them with **Move up/down**. The first version supports one selected item at a time.
