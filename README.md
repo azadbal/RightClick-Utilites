@@ -102,4 +102,6 @@ Forced cancellation can leave an `.rightclick-utilities-*` temporary directory, 
 
 ## Licensing
 
-A project license has not been selected. FFmpeg retains its own license; the local build used during development is GPL. FFmpeg binaries are not committed. Check your supplied build with `ffmpeg -L` before redistributing it.
+RightClick Utilities is licensed under the [MIT License](LICENSE), allowing personal and commercial use, modification, and redistribution.
+
+Third-party dependencies retain their own licenses. FFmpeg retains its own license; the local build used during development is GPL. FFmpeg binaries are not committed. Check your supplied build with `ffmpeg -L` before redistributing it.

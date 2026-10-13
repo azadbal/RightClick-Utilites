@@ -29,7 +29,7 @@ This local release includes FFmpeg and ffprobe from the FFmpeg directory supplie
 FFmpeg project: https://ffmpeg.org/
 License information: run ffmpeg.exe -L
 Source: https://ffmpeg.org/download.html and the provider of the supplied build.
-The supplied GPL build's licensing applies to FFmpeg and ffprobe; no project license has been chosen yet.
+RightClick Utilities is licensed under MIT. The supplied GPL build's licensing applies to FFmpeg and ffprobe.
 '@
     Set-Content -LiteralPath (Join-Path $releaseRoot 'THIRD-PARTY.txt') -Value $notice -Encoding UTF8
     if (-not $SkipShell) { & (Join-Path $PSScriptRoot 'build-shell.ps1') }
