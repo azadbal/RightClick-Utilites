@@ -69,7 +69,7 @@ fn cli_path() -> Result<PathBuf, String> {
 }
 fn config_path() -> Result<PathBuf, String> {
     let base = std::env::var_os("USERPROFILE").ok_or("USERPROFILE is unavailable.")?;
-    Ok(PathBuf::from(base).join(".azad-utilities/right-click-menu/functions.json"))
+    Ok(PathBuf::from(base).join(".rightclick-utilities/functions.json"))
 }
 fn cli_check(args: &[&str]) -> Result<(), String> {
     let out = hidden_command(cli_path()?)

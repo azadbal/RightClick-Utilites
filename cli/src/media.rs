@@ -283,7 +283,7 @@ pub fn compress(
         bail!("Compression output must have a .mp4 extension (H.264/AAC)");
     }
     let temporary = tempfile::Builder::new()
-        .prefix(".azad-utilities-")
+        .prefix(".rightclick-utilities-")
         .tempdir_in(destination.parent().unwrap())?;
     let encoded = temporary.path().join("compressed.mp4");
     eprintln!("Encoding full video with a limit of {cap} bytes");
@@ -410,7 +410,7 @@ pub fn strip_audio(input: &Path, output: Option<&Path>, overwrite: bool) -> Resu
         .and_then(|e| e.to_str())
         .context("Output requires a video container extension")?;
     let temporary = tempfile::Builder::new()
-        .prefix(".azad-utilities-")
+        .prefix(".rightclick-utilities-")
         .tempdir_in(destination.parent().unwrap())?;
     let encoded = temporary
         .path()

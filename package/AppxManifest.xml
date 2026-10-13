@@ -7,9 +7,9 @@
  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
  xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
  IgnorableNamespaces="uap uap10 rescap com desktop4 desktop5">
- <Identity Name="AzadUtilities.RightClickMenu" Publisher="CN=Azad Utilities Local Development" Version="1.0.1.0" ProcessorArchitecture="x64" />
+ <Identity Name="RightClickUtilities" Publisher="CN=RightClick Utilities Local Development" Version="1.0.1.0" ProcessorArchitecture="x64" />
  <Properties>
-  <DisplayName>RightClick Utilities</DisplayName><PublisherDisplayName>Azad Utilities</PublisherDisplayName>
+  <DisplayName>RightClick Utilities</DisplayName><PublisherDisplayName>RightClick Utilities</PublisherDisplayName>
   <Logo>Assets\StoreLogo.png</Logo><uap10:AllowExternalContent>true</uap10:AllowExternalContent>
  </Properties>
  <Resources><Resource Language="en-us" /></Resources>

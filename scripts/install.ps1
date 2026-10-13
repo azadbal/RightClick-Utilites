@@ -1,28 +1,22 @@
 [CmdletBinding()]
 param(
     [string]$SourceDirectory = (Join-Path $PSScriptRoot '..\release'),
-    [string]$InstallDirectory = (Join-Path $env:USERPROFILE '.azad-utilities\right-click-menu\app'),
+    [string]$InstallDirectory = (Join-Path $env:USERPROFILE '.rightclick-utilities\app'),
     [switch]$Development
 )
 $ErrorActionPreference = 'Stop'
 $source = [IO.Path]::GetFullPath($SourceDirectory)
 $target = [IO.Path]::GetFullPath($InstallDirectory)
-$name = 'AzadUtilities.RightClickMenu'
-$subject = 'CN=Azad Utilities Local Development'
+$name = 'RightClickUtilities'
+$subject = 'CN=RightClick Utilities Local Development'
 foreach ($file in @('Utilities.exe','UtilitiesCli.exe','UtilitiesShell.dll','AppxManifest.xml','Utilities.identity.msix')) {
     if (!(Test-Path -LiteralPath (Join-Path $source $file))) { throw "Build the complete release first. Missing $file in $source" }
 }
 if ([Environment]::OSVersion.Version.Build -lt 22000) { throw 'The modern context menu requires Windows 11 (build 22000 or later).' }
-$configDirectory = Join-Path $env:USERPROFILE '.azad-utilities\right-click-menu'
+$configDirectory = Join-Path $env:USERPROFILE '.rightclick-utilities'
 New-Item -ItemType Directory -Force -Path $target, $configDirectory | Out-Null
 $statePath = Join-Path $configDirectory 'install-state.json'
 $state = if (Test-Path -LiteralPath $statePath) { Get-Content -Raw -LiteralPath $statePath | ConvertFrom-Json } else { $null }
-# Older installs launched by a packaged host may have redirected AppData writes.
-# Reading their state preserves certificate ownership without touching function settings.
-$legacyStatePath = Join-Path $env:LOCALAPPDATA 'AzadUtilities\RightClickMenu\install-state.json'
-if (!$state -and (Test-Path -LiteralPath $legacyStatePath)) {
-    $state = Get-Content -Raw -LiteralPath $legacyStatePath | ConvertFrom-Json
-}
 $oldPackages = @(Get-AppxPackage -Name $name)
 # Stop neither Explorer nor the utility. A loaded DLL may require sign-out before updating.
 if ($source -ne $target) {
@@ -34,7 +28,6 @@ $trustCreated = if ($state) { [bool]$state.trustCreated } else { $false }
 $machineTrustCreated = if ($state -and $state.PSObject.Properties['machineTrustCreated']) { [bool]$state.machineTrustCreated } else { $false }
 function Save-InstallState {
     @{installDirectory=$target;certificateThumbprint=$certificateThumbprint;certificateCreated=$certificateCreated;trustCreated=$trustCreated;machineTrustCreated=$machineTrustCreated;development=[bool]$Development;unsigned=$false;userSid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value} | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding UTF8
-    if (Test-Path -LiteralPath $legacyStatePath) { Remove-Item -LiteralPath $legacyStatePath }
 }
 if (!$Development) {
     $signTool = 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\SignTool.exe'

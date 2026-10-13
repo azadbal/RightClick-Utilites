@@ -1,6 +1,6 @@
 # RightClick Utilities
 
-A small Windows 11 app that adds a **RightClick Utilities** submenu to Explorer for files and folders. Build your own shortcuts by pairing a menu label with a program and its arguments.
+A standalone Windows 11 app that adds a **RightClick Utilities** submenu to Explorer for files and folders. Build your own shortcuts by pairing a menu label with a program and its arguments.
 
 ## Included functions
 
@@ -28,7 +28,7 @@ Arguments are entered one per line, without surrounding quotes. Supported placeh
 | `{tools}` | Installed tools directory |
 | `{cli}` | Built-in CLI executable |
 
-Programs receive individual arguments directly. For scripts, choose their interpreter as the program and pass the script path as an argument. Functions are stored in `%USERPROFILE%\.azad-utilities\right-click-menu\functions.json` and shared by the app, CLI, and Explorer extension.
+Programs receive individual arguments directly. For scripts, choose their interpreter as the program and pass the script path as an argument. Functions are stored in `%USERPROFILE%\.rightclick-utilities\functions.json` and shared by the app, CLI, and Explorer extension.
 
 ## Build
 
@@ -51,7 +51,7 @@ For development, build the CLI with `cargo build --release --manifest-path cli/C
 .\scripts\install.ps1
 ```
 
-The installer copies the app to `%USERPROFILE%\.azad-utilities\right-click-menu\app`, signs a local sparse MSIX identity, and registers the modern Windows 11 submenu. It keeps menu construction fast and runs processing outside Explorer.
+The installer copies the app to `%USERPROFILE%\.rightclick-utilities\app`, signs a local sparse MSIX identity, and registers the modern Windows 11 submenu. It keeps menu construction fast and runs processing outside Explorer.
 
 On Windows builds requiring machine certificate trust, the first installation returns a certificate-trust error. Run this prepared helper **as administrator, using the same Windows account**:
 
@@ -98,7 +98,7 @@ python tests/test_video_functions.py
 
 The initial implementation passed CLI/core tests, eight real FFmpeg integration tests, and the native shell harness. The standalone GUI and modern Explorer submenu were checked on Windows 11 x64. Other platforms are not supported yet.
 
-Forced cancellation can leave an `.azad-utilities-*` temporary directory, but incomplete output is never published as a completed result.
+Forced cancellation can leave an `.rightclick-utilities-*` temporary directory, but incomplete output is never published as a completed result.
 
 ## Licensing
 

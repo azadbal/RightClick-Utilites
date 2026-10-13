@@ -4,7 +4,7 @@
 identity package registers it for files (`*`) and selected folders (`Directory`)
 in the Windows 11 primary context menu. Its submenu title is **RightClick Utilities**.
 
-The DLL reads `%USERPROFILE%\.azad-utilities\right-click-menu\functions.json`
+The DLL reads `%USERPROFILE%\.rightclick-utilities\functions.json`
 each time Explorer enumerates the submenu. File/folder and extension filtering
 happens in each child's `GetState`, since `EnumSubCommands` receives no selection.
 Multiple selections are disabled and rejected again during invocation. Invalid
@@ -44,7 +44,7 @@ the production GUI.
 ```
 
 The installer copies the release to
-`%USERPROFILE%\.azad-utilities\right-click-menu\app`, creates a non-exportable
+`%USERPROFILE%\.rightclick-utilities\app`, creates a non-exportable
 local code-signing certificate in `CurrentUser\My`, imports its public certificate
 into `CurrentUser\TrustedPeople`, signs the identity MSIX, and registers it with
 `Add-AppxPackage -ExternalLocation`. State records certificate ownership, including

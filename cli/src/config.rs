@@ -30,7 +30,7 @@ pub fn config_path(path: Option<PathBuf>) -> Result<PathBuf> {
             std::env::var_os("USERPROFILE")
                 .context("USERPROFILE is unset; pass --config explicitly")?,
         )
-        .join(".azad-utilities/right-click-menu/functions.json"))
+        .join(".rightclick-utilities/functions.json"))
     })
 }
 
@@ -173,7 +173,7 @@ mod tests {
         let profile = PathBuf::from(std::env::var_os("USERPROFILE").unwrap());
         assert_eq!(
             config_path(None).unwrap(),
-            profile.join(".azad-utilities/right-click-menu/functions.json")
+            profile.join(".rightclick-utilities/functions.json")
         );
         let explicit = PathBuf::from("custom-functions.json");
         assert_eq!(config_path(Some(explicit.clone())).unwrap(), explicit);

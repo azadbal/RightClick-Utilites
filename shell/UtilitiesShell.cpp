@@ -74,7 +74,7 @@ static std::vector<Function> ReadFunctionsAt(const std::filesystem::path& path) 
 static std::vector<Function> ReadFunctions() {
     PWSTR profile = nullptr;
     if (FAILED(SHGetKnownFolderPath(FOLDERID_Profile, 0, nullptr, &profile))) return {};
-    std::filesystem::path path = std::filesystem::path(profile) / L".azad-utilities" / L"right-click-menu" / L"functions.json";
+    std::filesystem::path path = std::filesystem::path(profile) / L".rightclick-utilities" / L"functions.json";
     CoTaskMemFree(profile);
     return ReadFunctionsAt(path);
 }

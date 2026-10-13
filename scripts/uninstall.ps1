@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param()
 $ErrorActionPreference = 'Stop'
-$statePath = Join-Path $env:USERPROFILE '.azad-utilities\right-click-menu\install-state.json'
+$statePath = Join-Path $env:USERPROFILE '.rightclick-utilities\install-state.json'
 $state = if (Test-Path -LiteralPath $statePath) { Get-Content -Raw -LiteralPath $statePath | ConvertFrom-Json } else { $null }
 if ($state -and $state.machineTrustCreated) {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -9,7 +9,7 @@ if ($state -and $state.machineTrustCreated) {
         throw 'This install created machine certificate trust. Run uninstall.ps1 as administrator to remove that certificate too.'
     }
 }
-Get-AppxPackage -Name 'AzadUtilities.RightClickMenu' | ForEach-Object { Remove-AppxPackage -Package $_.PackageFullName }
+Get-AppxPackage -Name 'RightClickUtilities' | ForEach-Object { Remove-AppxPackage -Package $_.PackageFullName }
 if (Test-Path -LiteralPath $statePath) {
     $state = Get-Content -Raw -LiteralPath $statePath | ConvertFrom-Json
     if ($state.certificateThumbprint -match '^[0-9A-Fa-f]{40}$') {
