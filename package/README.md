@@ -9,7 +9,7 @@ each time Explorer enumerates the submenu. File/folder and extension filtering
 happens in each child's `GetState`, since `EnumSubCommands` receives no selection.
 Multiple selections are disabled and rejected again during invocation. Invalid
 configuration yields a menu containing only **Manage functions…**. Missing
-configuration uses the three built-in video functions.
+configuration uses the four built-in video functions.
 
 Explorer starts `Utilities.exe` beside the DLL using `CreateProcessW` and Windows
 argument quoting. A function receives `--run-function <id> --input <path>`;

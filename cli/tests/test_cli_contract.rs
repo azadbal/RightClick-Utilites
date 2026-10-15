@@ -53,7 +53,18 @@ fn config_defaults_and_invalid_config_contract() {
     assert!(config.is_file());
     let data = result(&output);
     assert_eq!(data["functions"][0]["id"], "video-15mb");
-    assert_eq!(data["functions"].as_array().unwrap().len(), 3);
+    assert_eq!(data["functions"].as_array().unwrap().len(), 4);
+    let iphone = data["functions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["id"] == "convert-iphone")
+        .unwrap();
+    assert_eq!(iphone["label"], "Convert for iPhone");
+    assert_eq!(
+        iphone["args"],
+        json!(["compress", "{input}", "--max-mb", "20", "--json"])
+    );
     std::fs::write(&config, b"{invalid}").unwrap();
     let output = cli(&["functions", "--config", path, "--json"]);
     assert!(!output.status.success());

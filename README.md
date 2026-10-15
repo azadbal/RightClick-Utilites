@@ -8,11 +8,14 @@ A standalone Windows 11 app that adds a **RightClick Utilities** submenu to Expl
 
 - **Compress video below 15 MB**
 - **Compress video below 20 MB**
+- **Convert for iPhone** — compresses below 20 MB as H.264/AAC MP4 for iPhone playback and saving to Photos.
 - **Remove audio from video** — creates a silent copy without re-encoding the video.
 
 Video outputs are saved beside the original with a new name. Existing files are protected. Compression preserves the full duration and checks the actual output size. Limits use decimal MB (1 MB = 1,000,000 bytes).
 
 Video content is checked with ffprobe. Audio-only files, images, and fake videos are rejected, even if renamed to `.mp4`. Compression produces H.264/AAC MP4 and retains the first video/audio tracks. Audio removal copies the non-audio streams into the chosen container.
+
+**Convert for iPhone** uses the same encoder as the 20 MB compression function. MOV is not required: [Apple supports H.264 video in MP4 containers](https://developer.apple.com/documentation/technologyoverviews/video). Outputs use the `-20MB.mp4` suffix and preserve the full video duration.
 
 ## Use the app
 

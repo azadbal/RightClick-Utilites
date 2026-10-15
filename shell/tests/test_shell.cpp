@@ -62,7 +62,7 @@ int wmain(int argc, wchar_t** argv) {
             LocalFree(parsed);
         }
         auto config = temporary / L"functions.json";
-        Check(ReadFunctionsAt(config).size() == 3, "missing config defaults");
+        Check(ReadFunctionsAt(config).size() == 4, "missing config defaults");
         std::ofstream(config) << R"({"version":1,"functions":[{"id":"custom","label":"Custom folder","enabled":true,"appliesTo":"folder","extensions":[]},{"id":"disabled","label":"Disabled","enabled":false,"appliesTo":"any"}]})";
         auto custom = ReadFunctionsAt(config);
         Check(custom.size() == 1 && custom[0].label == L"Custom folder", "configuration and disabled filtering");

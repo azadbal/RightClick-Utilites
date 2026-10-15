@@ -32,6 +32,7 @@ static std::vector<Function> Defaults() {
     std::vector<Function> result;
     for (auto pair : {std::pair{L"video-15mb", L"Compress video below 15 MB"},
                       std::pair{L"video-20mb", L"Compress video below 20 MB"},
+                      std::pair{L"convert-iphone", L"Convert for iPhone"},
                       std::pair{L"strip-audio", L"Remove audio from video"}}) {
         result.push_back({pair.first, pair.second, L"file", true,
             {L".mp4", L".mov", L".mkv", L".avi", L".webm", L".m4v", L".wmv", L".mpeg", L".mpg",

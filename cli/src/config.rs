@@ -60,6 +60,21 @@ pub fn defaults() -> Config {
         });
     }
     functions.push(Function {
+        id: "convert-iphone".into(),
+        label: "Convert for iPhone".into(),
+        enabled: true,
+        applies_to: "file".into(),
+        extensions: extensions.clone(),
+        executable: "{cli}".into(),
+        args: vec![
+            "compress".into(),
+            "{input}".into(),
+            "--max-mb".into(),
+            "20".into(),
+            "--json".into(),
+        ],
+    });
+    functions.push(Function {
         id: "strip-audio".into(),
         label: "Remove audio from video".into(),
         enabled: true,
@@ -182,7 +197,7 @@ mod tests {
     fn defaults_valid_and_shared() {
         let config = defaults();
         validate(&config).unwrap();
-        assert_eq!(config.functions.len(), 3);
+        assert_eq!(config.functions.len(), 4);
         assert_eq!(config.functions[0].id, "video-15mb");
     }
     #[test]
