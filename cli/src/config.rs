@@ -22,6 +22,12 @@ pub struct Function {
     pub extensions: Vec<String>,
     pub executable: String,
     pub args: Vec<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub supports_multiple: bool,
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
 }
 
 pub fn config_path(path: Option<PathBuf>) -> Result<PathBuf> {
@@ -44,6 +50,7 @@ pub fn defaults() -> Config {
     let mut functions = Vec::new();
     for mb in [15, 20] {
         functions.push(Function {
+            supports_multiple: false,
             id: format!("video-{mb}mb"),
             label: format!("Compress video below {mb} MB"),
             enabled: true,
@@ -60,6 +67,7 @@ pub fn defaults() -> Config {
         });
     }
     functions.push(Function {
+        supports_multiple: false,
         id: "convert-iphone".into(),
         label: "Convert for iPhone".into(),
         enabled: true,
@@ -75,6 +83,7 @@ pub fn defaults() -> Config {
         ],
     });
     functions.push(Function {
+        supports_multiple: false,
         id: "strip-audio".into(),
         label: "Remove audio from video".into(),
         enabled: true,
@@ -82,6 +91,16 @@ pub fn defaults() -> Config {
         extensions,
         executable: "{cli}".into(),
         args: vec!["strip-audio".into(), "{input}".into(), "--json".into()],
+    });
+    functions.push(Function {
+        id: "png-jpeg".into(),
+        label: "PNG → JPEG".into(),
+        enabled: true,
+        applies_to: "any".into(),
+        extensions: vec![".png".into()],
+        executable: "{cli}".into(),
+        args: vec!["png-to-jpeg".into(), "{input}".into(), "--json".into()],
+        supports_multiple: true,
     });
     Config {
         version: 1,
@@ -197,7 +216,7 @@ mod tests {
     fn defaults_valid_and_shared() {
         let config = defaults();
         validate(&config).unwrap();
-        assert_eq!(config.functions.len(), 4);
+        assert_eq!(config.functions.len(), 5);
         assert_eq!(config.functions[0].id, "video-15mb");
     }
     #[test]

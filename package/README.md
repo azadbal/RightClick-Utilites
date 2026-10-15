@@ -7,13 +7,16 @@ in the Windows 11 primary context menu. Its submenu title is **RightClick Utilit
 The DLL reads `%USERPROFILE%\.rightclick-utilities\functions.json`
 each time Explorer enumerates the submenu. File/folder and extension filtering
 happens in each child's `GetState`, since `EnumSubCommands` receives no selection.
-Multiple selections are disabled and rejected again during invocation. Invalid
+PNG → JPEG accepts multiple PNG files or folders; other functions remain single
+selection unless their configuration sets `supportsMultiple` to true. Every
+selected item must match the function's filters. Invalid
 configuration yields a menu containing only **Manage functions…**. Missing
-configuration uses the four built-in video functions.
+configuration uses the four built-in video functions plus PNG → JPEG.
 
 Explorer starts `Utilities.exe` beside the DLL using `CreateProcessW` and Windows
 argument quoting. A function receives `--run-function <id> --input <path>`;
 **Manage functions…** receives `--input <path>` when a selection is available.
+Multiple paths are passed as repeated `--input <path>` pairs.
 The shell DLL performs no media processing and never executes configuration's
 `executable` or `args` itself.
 

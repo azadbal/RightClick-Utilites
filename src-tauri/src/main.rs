@@ -23,6 +23,8 @@ struct Function {
     extensions: Vec<String>,
     executable: String,
     args: Vec<String>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    supports_multiple: bool,
 }
 #[derive(Clone, Serialize, Deserialize)]
 struct Config {
@@ -123,7 +125,12 @@ fn launch_context() -> Value {
             .and_then(|i| args.get(i + 1))
             .cloned()
     };
-    json!({"functionId":arg("--run-function"),"input":arg("--input")})
+    let inputs: Vec<String> = args
+        .windows(2)
+        .filter(|pair| pair[0] == "--input")
+        .map(|pair| pair[1].clone())
+        .collect();
+    json!({"functionId":arg("--run-function"),"inputs":inputs})
 }
 #[tauri::command]
 fn job_status(jobs: tauri::State<Jobs>) -> Job {
@@ -134,17 +141,19 @@ fn start_job(
     app: tauri::AppHandle,
     jobs: tauri::State<Jobs>,
     function_id: String,
-    input: String,
+    inputs: Vec<String>,
 ) -> Result<(), String> {
     let mut job = jobs.0.lock().unwrap();
     if job.running {
         return Err("A function is already running in this window.".into());
     }
-    if input.trim().is_empty() {
-        return Err("Choose a file or folder first.".into());
+    if inputs.is_empty() || inputs.iter().any(|input| input.trim().is_empty()) {
+        return Err("Choose files or a folder first.".into());
     }
     let mut child = hidden_command(cli_path()?)
-        .args(["run", &function_id, &input, "--json"])
+        .args(["run", &function_id])
+        .args(&inputs)
+        .arg("--json")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

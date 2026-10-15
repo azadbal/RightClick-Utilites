@@ -31,14 +31,22 @@ int wmain(int argc, wchar_t** argv) {
         std::filesystem::create_directory(temporary);
         auto video = temporary / L"sample unicode \x03a9 & spaces.MP4";
         auto text = temporary / L"sample.txt";
+        auto png = temporary / L"image unicode \x03a9 & spaces.PNG";
+        auto secondPng = temporary / L"second.png";
         auto folder = temporary / L"Folder with spaces";
         std::ofstream(video) << "fixture";
         std::ofstream(text) << "fixture";
+        std::ofstream(png) << "fixture";
+        std::ofstream(secondPng) << "fixture";
         std::filesystem::create_directory(folder);
         auto videos = Items({video});
         auto texts = Items({text});
         auto folders = Items({folder});
         auto multiple = Items({video,text});
+        auto pngs = Items({png});
+        auto multiplePngs = Items({png,secondPng});
+        auto pngAndFolder = Items({png,folder});
+        auto mixedPngs = Items({png,text});
         auto defaults = Defaults();
         auto command = Microsoft::WRL::Make<Command>(defaults[0]);
         Check(State(command.Get(), videos.Get()) == ECS_ENABLED, "video enabled");
@@ -47,14 +55,28 @@ int wmain(int argc, wchar_t** argv) {
         Check(State(command.Get(), multiple.Get()) == ECS_DISABLED, "multi selection disabled");
         Check(command->Invoke(multiple.Get(), nullptr) == E_INVALIDARG, "multi invoke rejected");
         Check(State(command.Get(), nullptr) == ECS_ENABLED, "enumeration without selection");
+        auto pngCommand = Microsoft::WRL::Make<Command>(defaults[4]);
+        Check(State(pngCommand.Get(), pngs.Get()) == ECS_ENABLED, "PNG enabled case insensitive");
+        Check(State(pngCommand.Get(), multiplePngs.Get()) == ECS_ENABLED, "multiple PNGs enabled");
+        Check(State(pngCommand.Get(), folders.Get()) == ECS_ENABLED, "PNG folder enabled");
+        Check(State(pngCommand.Get(), pngAndFolder.Get()) == ECS_ENABLED, "PNG and folder enabled");
+        Check(State(pngCommand.Get(), mixedPngs.Get()) == ECS_HIDDEN, "mixed PNG selection rejected");
+        Check(State(pngCommand.Get(), videos.Get()) == ECS_HIDDEN, "PNG rejects video");
         auto folderCommand = Microsoft::WRL::Make<Command>(Function{L"folder", L"Folder command", L"folder", true, {L".mp4"}});
         Check(State(folderCommand.Get(), folders.Get()) == ECS_ENABLED, "folder command enabled");
         Check(State(folderCommand.Get(), videos.Get()) == ECS_HIDDEN, "folder command rejects file");
         auto manage = Microsoft::WRL::Make<Command>(Function{L"", L"Manage functions\x2026", L"any"});
         Check(State(manage.Get(), folders.Get()) == ECS_ENABLED, "manage folder enabled");
         Check(State(manage.Get(), videos.Get()) == ECS_ENABLED, "manage file enabled");
+        Check(State(manage.Get(), multiple.Get()) == ECS_ENABLED, "manage multiple enabled");
         Selection selected;
         Check(GetSelection(folders.Get(), selected) == S_OK && selected.path == folder.wstring() && selected.folder, "actual folder filesystem path");
+        Check(GetSelection(pngAndFolder.Get(), selected) == S_OK && selected.count == 2 && selected.items.size() == 2 &&
+            selected.items[0].path == png.wstring() && !selected.items[0].folder &&
+            selected.items[1].path == folder.wstring() && selected.items[1].folder, "all selected filesystem paths and types");
+        Selection oversized;
+        oversized.items.push_back({std::wstring(32767, L'x')});
+        Check(Launch(L"", oversized) == HRESULT_FROM_WIN32(ERROR_FILENAME_EXCED_RANGE), "oversized command rejected before process launch");
         for (std::wstring value : {L"", L"plain", L"space and \x03a9", L"ends\\", L"a\\\"b & c", L"C:\\"}) {
             int count;
             PWSTR* parsed = CommandLineToArgvW((L"app " + Quote(value)).c_str(), &count);
@@ -62,10 +84,15 @@ int wmain(int argc, wchar_t** argv) {
             LocalFree(parsed);
         }
         auto config = temporary / L"functions.json";
-        Check(ReadFunctionsAt(config).size() == 4, "missing config defaults");
+        Check(ReadFunctionsAt(config).size() == 5, "missing config defaults");
         std::ofstream(config) << R"({"version":1,"functions":[{"id":"custom","label":"Custom folder","enabled":true,"appliesTo":"folder","extensions":[]},{"id":"disabled","label":"Disabled","enabled":false,"appliesTo":"any"}]})";
         auto custom = ReadFunctionsAt(config);
         Check(custom.size() == 1 && custom[0].label == L"Custom folder", "configuration and disabled filtering");
+        Check(!custom[0].supportsMultiple, "existing configuration defaults to single selection");
+        std::ofstream(config) << R"({"version":1,"functions":[{"id":"png-jpeg","label":"PNG to JPEG","appliesTo":"any","extensions":[".PNG"],"supportsMultiple":true}]})";
+        auto configuredPng = ReadFunctionsAt(config);
+        Check(configuredPng.size() == 1 && configuredPng[0].supportsMultiple, "configuration supports multiple");
+        Check(State(Microsoft::WRL::Make<Command>(configuredPng[0]).Get(), multiplePngs.Get()) == ECS_ENABLED, "configured PNG multiple enabled");
         std::ofstream(config) << R"({"version":1,"functions":[]})";
         Check(ReadFunctionsAt(config).empty(), "dynamic config update");
         std::ofstream(config) << "invalid json";
@@ -88,7 +115,7 @@ int wmain(int argc, wchar_t** argv) {
         PWSTR title = nullptr;
         Check(SUCCEEDED(root->GetTitle(videos.Get(), &title)) && std::wstring(title) == L"RightClick Utilities", "root title");
         CoTaskMemFree(title);
-        Check(State(root.Get(), multiple.Get()) == ECS_DISABLED, "root multi disabled");
+        Check(State(root.Get(), multiple.Get()) == ECS_ENABLED, "root multi enabled");
         ComPtr<IEnumExplorerCommand> enumeration;
         Check(SUCCEEDED(root->EnumSubCommands(&enumeration)), "enumerate DLL children");
         unsigned count = 0;
@@ -117,6 +144,7 @@ int wmain(int argc, wchar_t** argv) {
             Check(content == expected, "actual launched argv matches selection");
         };
         checkLaunch(manageChild.Get(), folders.Get(), "--input\n" + winrt::to_string(folder.wstring()) + "\n");
+        checkLaunch(manageChild.Get(), pngAndFolder.Get(), "--input\n" + winrt::to_string(png.wstring()) + "\n--input\n" + winrt::to_string(folder.wstring()) + "\n");
         if (functionChild) {
             PWSTR functionTitle;
             functionChild->GetTitle(nullptr, &functionTitle);
@@ -136,7 +164,7 @@ int wmain(int argc, wchar_t** argv) {
         Check(unload && unload() == S_OK, "DLL COM lifetime");
         FreeLibrary(dll);
         std::filesystem::remove_all(temporary);
-        std::cout << "PASS: DLL activation, enumeration, config updates, file/folder filtering, multiselect rejection, Unicode quoting, actual Invoke argv, COM lifetime\n";
+        std::cout << "PASS: DLL activation, enumeration, config updates, PNG multiselect filtering, command length limit, Unicode quoting, actual repeated Invoke argv, COM lifetime\n";
     } catch (const std::exception& error) {
         std::cerr << "FAIL: " << error.what() << "\n";
         std::error_code ignored;

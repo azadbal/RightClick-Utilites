@@ -23,6 +23,7 @@ struct Function {
     std::wstring id, label, appliesTo;
     bool enabled = true;
     std::vector<std::wstring> extensions;
+    bool supportsMultiple = false;
 };
 static std::wstring Lower(std::wstring text) {
     std::transform(text.begin(), text.end(), text.begin(), towlower);
@@ -38,6 +39,7 @@ static std::vector<Function> Defaults() {
             {L".mp4", L".mov", L".mkv", L".avi", L".webm", L".m4v", L".wmv", L".mpeg", L".mpg",
              L".mts", L".m2ts", L".flv", L".ts", L".3gp", L".ogv"}});
     }
+    result.push_back({L"png-jpeg", L"PNG \x2192 JPEG", L"any", true, {L".png"}, true});
     return result;
 }
 static std::vector<Function> ReadFunctionsAt(const std::filesystem::path& path) {
@@ -61,6 +63,7 @@ static std::vector<Function> ReadFunctionsAt(const std::filesystem::path& path) 
             function.label = item.GetNamedString(L"label", L"");
             function.appliesTo = item.GetNamedString(L"appliesTo", L"any");
             function.enabled = item.GetNamedBoolean(L"enabled", true);
+            function.supportsMultiple = item.GetNamedBoolean(L"supportsMultiple", false);
             if (item.HasKey(L"extensions")) {
                 for (auto extension : item.GetNamedArray(L"extensions"))
                     function.extensions.push_back(Lower(std::wstring(extension.GetString())));
@@ -79,29 +82,45 @@ static std::vector<Function> ReadFunctions() {
     CoTaskMemFree(profile);
     return ReadFunctionsAt(path);
 }
-struct Selection { std::wstring path; bool folder = false; DWORD count = 0; };
+struct SelectedItem { std::wstring path; bool folder = false; };
+struct Selection {
+    std::wstring path;
+    bool folder = false;
+    DWORD count = 0;
+    std::vector<SelectedItem> items;
+};
 static HRESULT GetSelection(IShellItemArray* items, Selection& selection) {
+    selection = {};
     if (!items) return S_FALSE;
     HRESULT hr = items->GetCount(&selection.count);
     if (FAILED(hr)) return hr;
-    if (selection.count != 1) return S_FALSE;
-    ComPtr<IShellItem> item;
-    if (FAILED(hr = items->GetItemAt(0, &item))) return hr;
-    PWSTR path = nullptr;
-    if (FAILED(hr = item->GetDisplayName(SIGDN_FILESYSPATH, &path))) return hr;
-    selection.path = path;
-    CoTaskMemFree(path);
-    DWORD attributes = GetFileAttributesW(selection.path.c_str());
-    if (attributes == INVALID_FILE_ATTRIBUTES) return HRESULT_FROM_WIN32(GetLastError());
-    selection.folder = (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+    if (!selection.count) return S_FALSE;
+    for (DWORD index = 0; index < selection.count; ++index) {
+        ComPtr<IShellItem> item;
+        if (FAILED(hr = items->GetItemAt(index, &item))) return hr;
+        PWSTR path = nullptr;
+        if (FAILED(hr = item->GetDisplayName(SIGDN_FILESYSPATH, &path))) return hr;
+        SelectedItem selected{path};
+        CoTaskMemFree(path);
+        DWORD attributes = GetFileAttributesW(selected.path.c_str());
+        if (attributes == INVALID_FILE_ATTRIBUTES) return HRESULT_FROM_WIN32(GetLastError());
+        selected.folder = (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        selection.items.push_back(std::move(selected));
+    }
+    selection.path = selection.items.front().path;
+    selection.folder = selection.items.front().folder;
     return S_OK;
 }
 static bool Applies(const Function& function, const Selection& selection) {
-    if (function.appliesTo == L"file" && selection.folder) return false;
-    if (function.appliesTo == L"folder" && !selection.folder) return false;
-    if (selection.folder || function.extensions.empty()) return true;
-    auto extension = Lower(std::filesystem::path(selection.path).extension().wstring());
-    return std::find(function.extensions.begin(), function.extensions.end(), extension) != function.extensions.end();
+    if (!selection.count || (selection.count > 1 && !function.supportsMultiple)) return false;
+    for (auto& item : selection.items) {
+        if (function.appliesTo == L"file" && item.folder) return false;
+        if (function.appliesTo == L"folder" && !item.folder) return false;
+        if (item.folder || function.extensions.empty()) continue;
+        auto extension = Lower(std::filesystem::path(item.path).extension().wstring());
+        if (std::find(function.extensions.begin(), function.extensions.end(), extension) == function.extensions.end()) return false;
+    }
+    return true;
 }
 static std::wstring ModuleDirectory() {
     wchar_t path[32768];
@@ -129,7 +148,9 @@ static HRESULT Launch(const std::wstring& id, const Selection& selection) {
     auto executable = directory + L"\\Utilities.exe";
     std::wstring command = Quote(executable);
     if (!id.empty()) command += L" --run-function " + Quote(id);
-    if (!selection.path.empty()) command += L" --input " + Quote(selection.path);
+    for (auto& item : selection.items) command += L" --input " + Quote(item.path);
+    // CreateProcess includes the terminating NUL in its 32,767-character limit.
+    if (command.size() >= 32767) return HRESULT_FROM_WIN32(ERROR_FILENAME_EXCED_RANGE);
     STARTUPINFOW startup{sizeof(startup)};
     PROCESS_INFORMATION process{};
     if (!CreateProcessW(executable.c_str(), command.data(), nullptr, nullptr, FALSE,
@@ -196,7 +217,8 @@ public:
         *state = ECS_ENABLED;
         if (!items) return S_OK; // EnumSubCommands does not receive a selection.
         if (FAILED(hr)) *state = ECS_HIDDEN;
-        else if (selection.count != 1) *state = ECS_DISABLED;
+        else if (!selection.count) *state = ECS_DISABLED;
+        else if (!root && !function.id.empty() && selection.count > 1 && !function.supportsMultiple) *state = ECS_DISABLED;
         else if (!root && !function.id.empty() && !Applies(function, selection)) *state = ECS_HIDDEN;
         return S_OK;
     }
@@ -205,9 +227,10 @@ public:
         Selection selection;
         HRESULT hr = GetSelection(items, selection);
         if (FAILED(hr)) return hr;
-        if (items && selection.count != 1) return E_INVALIDARG;
+        if (items && !selection.count) return E_INVALIDARG;
         if (!function.id.empty()) {
             if (hr != S_OK) return E_INVALIDARG;
+            if (selection.count > 1 && !function.supportsMultiple) return E_INVALIDARG;
             auto current = ReadFunctions();
             auto found = std::find_if(current.begin(), current.end(), [&](auto& entry) { return entry.id == function.id; });
             if (found == current.end() || !Applies(*found, selection)) return E_ACCESSDENIED;

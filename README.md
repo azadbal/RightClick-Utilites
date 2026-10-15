@@ -10,6 +10,9 @@ A standalone Windows 11 app that adds a **RightClick Utilities** submenu to Expl
 - **Compress video below 20 MB**
 - **Convert for iPhone** — compresses below 20 MB as H.264/AAC MP4 for iPhone playback and saving to Photos.
 - **Remove audio from video** — creates a silent copy without re-encoding the video.
+- **PNG → JPEG** — converts PNGs to JPEG at 90% quality. Accepts one PNG, multiple selected PNGs, or a folder.
+
+JPEGs are saved beside their PNG originals as `name.jpg`, with numbered names when a file already exists. Transparency is flattened onto white. Folder conversion includes PNGs directly inside the folder and skips subfolders and other file types. Damaged PNGs are reported while the remaining images continue processing; successful outputs remain available if part of a batch fails.
 
 Video outputs are saved beside the original with a new name. Existing files are protected. Compression preserves the full duration and checks the actual output size. Limits use decimal MB (1 MB = 1,000,000 bytes).
 
@@ -21,9 +24,9 @@ Video content is checked with ffprobe. Audio-only files, images, and fake videos
 
 ![RightClick Utilities desktop app with function management and a completed audio-removal operation](docs/images/rightclick-utilities-app.png)
 
-Open `release/Utilities.exe`. Choose a function, select or drop one file or folder, and click **Run function**. The app shows progress, cancellation, errors, and an **Open output** button.
+Open `release/Utilities.exe`. Choose a function, select or drop files or a folder, and click **Run function**. The app shows progress, cancellation, errors, and an **Open output** button for each result.
 
-Use **Add function** or **Edit** to change the label, program, arguments, extension filters, and file/folder applicability. Enable or disable functions with the checkbox, and reorder them with **Move up/down**. The first version supports one selected item at a time.
+Use **Add function** or **Edit** to change the label, program, arguments, extension filters, and file/folder applicability. Enable or disable functions with the checkbox, and reorder them with **Move up/down**. PNG → JPEG supports multiple selections; video and custom functions accept one item at a time.
 
 Arguments are entered one per line, without surrounding quotes. Supported placeholders:
 
@@ -77,6 +80,8 @@ The CLI runs independently of the GUI:
 ```powershell
 .\release\UtilitiesCli.exe compress 'C:\Videos\clip.mp4' --max-mb 20 --json
 .\release\UtilitiesCli.exe strip-audio 'C:\Videos\clip.mp4' --json
+.\release\UtilitiesCli.exe png-to-jpeg 'C:\Images\first.png' 'C:\Images\second.png' --json
+.\release\UtilitiesCli.exe png-to-jpeg 'C:\Images' --json
 .\release\UtilitiesCli.exe run video-15mb 'C:\Videos\clip.mp4' --json
 .\release\UtilitiesCli.exe functions --json
 .\release\UtilitiesCli.exe --help
@@ -86,7 +91,7 @@ Direct video commands support `--output <path>` and explicit `--overwrite`. Orig
 
 ## Source layout
 
-- `cli/`: Rust runner and video processing.
+- `cli/`: Rust runner, video processing, and PNG/JPEG conversion.
 - `ui/` and `src-tauri/`: React/TypeScript GUI and desktop host.
 - `shell/`: Native C++ `IExplorerCommand` submenu.
 - `package/` and `scripts/`: Windows registration and build/install scripts.

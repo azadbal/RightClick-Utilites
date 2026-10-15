@@ -163,7 +163,12 @@ fn same_file(left: &Path, right: &Path) -> Result<bool> {
     }
 }
 
-fn publish(temp: &Path, destination: &Path, explicit: bool, overwrite: bool) -> Result<PathBuf> {
+pub(crate) fn publish(
+    temp: &Path,
+    destination: &Path,
+    explicit: bool,
+    overwrite: bool,
+) -> Result<PathBuf> {
     process::check_cancelled()?;
     if explicit && overwrite {
         #[cfg(windows)]

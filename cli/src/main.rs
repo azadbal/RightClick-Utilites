@@ -1,4 +1,5 @@
 mod config;
+mod images;
 mod media;
 mod process;
 
@@ -68,10 +69,18 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
-    /// Run an enabled configured function on one file or folder
+    /// Convert PNG files or a folder's direct PNG children to JPEG at quality 90
+    PngToJpeg {
+        #[arg(required = true, num_args = 1..)]
+        input: Vec<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Run an enabled configured function on files or folders
     Run {
         function_id: String,
-        input: PathBuf,
+        #[arg(required = true, num_args = 1..)]
+        input: Vec<PathBuf>,
         #[arg(long)]
         config: Option<PathBuf>,
         #[arg(long)]
@@ -88,6 +97,7 @@ enum Commands {
 
 fn execute(command: Commands) -> Result<Value> {
     match command {
+        Commands::PngToJpeg { input, .. } => images::png_to_jpeg(&input),
         Commands::Compress {
             input,
             max_mb,
@@ -115,7 +125,7 @@ fn execute(command: Commands) -> Result<Value> {
     }
 }
 
-fn run_function(id: &str, input: &Path, config_path: Option<PathBuf>) -> Result<Value> {
+fn run_function(id: &str, inputs: &[PathBuf], config_path: Option<PathBuf>) -> Result<Value> {
     let config = config::load(&config::config_path(config_path)?)?;
     let function = config
         .functions
@@ -125,26 +135,41 @@ fn run_function(id: &str, input: &Path, config_path: Option<PathBuf>) -> Result<
     if !function.enabled {
         bail!("Function '{id}' is disabled");
     }
+    if inputs.len() > 1 && !function.supports_multiple {
+        bail!("Function '{id}' does not support multiple inputs");
+    }
+    for input in inputs {
+        if (function.applies_to == "file" && !input.is_file())
+            || (function.applies_to == "folder" && !input.is_dir())
+        {
+            bail!("Function does not apply to this input type");
+        }
+        let extension = input
+            .extension()
+            .map(|v| format!(".{}", v.to_string_lossy().to_lowercase()))
+            .unwrap_or_default();
+        if !input.is_dir()
+            && !function.extensions.is_empty()
+            && !function.extensions.contains(&extension)
+        {
+            bail!("Function does not support this file extension");
+        }
+    }
+    let input = &inputs[0];
     let input = input
         .canonicalize()
         .context("Input does not exist or cannot be accessed")?;
-    if (function.applies_to == "file" && !input.is_file())
-        || (function.applies_to == "folder" && !input.is_dir())
-    {
-        bail!("Function does not apply to this input type");
-    }
-    let extension = input
-        .extension()
-        .map(|v| format!(".{}", v.to_string_lossy().to_lowercase()))
-        .unwrap_or_default();
-    if !function.extensions.is_empty() && !function.extensions.contains(&extension) {
-        bail!("Function does not support this file extension");
-    }
     let cli = std::env::current_exe()?;
     let args: Vec<String> = function
         .args
         .iter()
-        .map(|s| config::expand(s, &input, &cli))
+        .flat_map(|s| {
+            if s == "{input}" && function.supports_multiple {
+                inputs.iter().map(|p| display_path(p)).collect::<Vec<_>>()
+            } else {
+                vec![config::expand(s, &input, &cli)]
+            }
+        })
         .collect();
     if function.executable == "{cli}" {
         // Parsing the same argument contract keeps the GUI and direct CLI behavior identical.
@@ -152,8 +177,10 @@ fn run_function(id: &str, input: &Path, config_path: Option<PathBuf>) -> Result<
             Cli::try_parse_from(std::iter::once(cli.to_string_lossy().into_owned()).chain(args))
                 .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         match parsed.command {
-            Commands::Compress { .. } | Commands::StripAudio { .. } => execute(parsed.command),
-            _ => bail!("Built-in functions may only invoke compress or strip-audio"),
+            Commands::Compress { .. }
+            | Commands::StripAudio { .. }
+            | Commands::PngToJpeg { .. } => execute(parsed.command),
+            _ => bail!("Built-in functions may only invoke compress, strip-audio or png-to-jpeg"),
         }
     } else {
         let executable = config::expand(&function.executable, &input, &cli);
@@ -181,6 +208,7 @@ fn main() {
     };
     let json_mode = match &cli.command {
         Commands::Compress { json, .. }
+        | Commands::PngToJpeg { json, .. }
         | Commands::StripAudio { json, .. }
         | Commands::Run { json, .. }
         | Commands::Functions { json, .. } => *json,
@@ -196,6 +224,10 @@ fn main() {
         Ok(result) => {
             if json_mode {
                 println!("{result}");
+            } else if let Some(outputs) = result.get("outputs").and_then(Value::as_array) {
+                for output in outputs {
+                    println!("Saved {}", output["output"].as_str().unwrap_or_default());
+                }
             } else if let Some(path) = result.get("output") {
                 println!("Saved {}", path.as_str().unwrap_or_default());
             } else if let Some(functions) = result.get("functions").and_then(Value::as_array) {
@@ -213,6 +245,9 @@ fn main() {
                 }
             } else {
                 println!("Completed successfully");
+            }
+            if result["success"] == false {
+                std::process::exit(1);
             }
         }
         Err(error) => {

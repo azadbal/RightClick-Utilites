@@ -53,7 +53,7 @@ fn config_defaults_and_invalid_config_contract() {
     assert!(config.is_file());
     let data = result(&output);
     assert_eq!(data["functions"][0]["id"], "video-15mb");
-    assert_eq!(data["functions"].as_array().unwrap().len(), 4);
+    assert_eq!(data["functions"].as_array().unwrap().len(), 5);
     let iphone = data["functions"]
         .as_array()
         .unwrap()
